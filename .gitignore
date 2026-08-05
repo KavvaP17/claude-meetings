@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+.next/
+out/
+dist/
+build/
+
+# turbo
+.turbo/
+
+# testing
+coverage/
+
+# env
+.env
+.env*.local
+
+# misc
+*.log
+.DS_Store
+Thumbs.db
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# claude code local settings
+.claude/settings.local.json
