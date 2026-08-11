@@ -13,3 +13,11 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model Meeting {
+  id           String   @id @default(uuid())
+  title        String
+  date         DateTime
+  participants String[]
+  createdAt    DateTime @default(now())
+}
