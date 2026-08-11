@@ -1,52 +1,36 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+import { apiFetch, ApiError } from './client';
 
-export interface RegisterPayload {
+export interface AuthPayload {
   email: string;
   password: string;
 }
 
-export interface RegisterResponse {
+export interface AuthResponse {
   accessToken: string;
 }
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+export { ApiError };
 
-function extractErrorMessage(body: unknown, fallback: string): string {
-  if (body && typeof body === 'object' && 'message' in body) {
-    const { message } = body as { message: unknown };
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message) && message.every((m) => typeof m === 'string')) {
-      return message.join(' ');
-    }
-  }
-  return fallback;
-}
-
-export async function registerUser(payload: RegisterPayload): Promise<RegisterResponse> {
-  let response: Response;
-  try {
-    response = await fetch(`${API_URL}/auth/register`, {
+export function registerUser(payload: AuthPayload): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>(
+    '/auth/register',
+    {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
-  } catch {
-    throw new ApiError('Unable to reach the server. Please try again.', 0);
-  }
+    },
+    'Registration failed.',
+  );
+}
 
-  const body: unknown = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new ApiError(extractErrorMessage(body, 'Registration failed.'), response.status);
-  }
-
-  return body as RegisterResponse;
+export function loginUser(payload: AuthPayload): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>(
+    '/auth/login',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    'Login failed.',
+  );
 }

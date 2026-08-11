@@ -1,22 +1,10 @@
 'use client';
 
-import { ApiError, registerUser } from '@/lib/api/auth';
+import { ApiError, loginUser } from '@/lib/api/auth';
 import { setSession } from '@/lib/auth/session';
-import {
-  Button,
-  Card,
-  Description,
-  FieldError,
-  Form,
-  Input,
-  Label,
-  Link,
-  TextField,
-} from '@heroui/react';
+import { Button, Card, FieldError, Form, Input, Label, Link, TextField } from '@heroui/react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-
-const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 function EyeIcon() {
   return (
@@ -57,7 +45,7 @@ function EyeOffIcon() {
   );
 }
 
-export default function RegisterPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -73,13 +61,13 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      const { accessToken } = await registerUser({ email, password });
+      const { accessToken } = await loginUser({ email, password });
       setSession({ email, accessToken });
       router.push('/');
     } catch (error) {
       setFormError(
-        error instanceof ApiError && error.status === 409
-          ? 'An account with this email already exists.'
+        error instanceof ApiError && error.status === 401
+          ? 'Incorrect email or password.'
           : error instanceof ApiError
             ? error.message
             : 'Something went wrong. Please try again.',
@@ -93,21 +81,13 @@ export default function RegisterPage() {
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-16 dark:bg-black">
       <Card className="w-full max-w-md">
         <Card.Header>
-          <Card.Title>Create an account</Card.Title>
-          <Card.Description>Sign up with your email and a password</Card.Description>
+          <Card.Title>Sign in</Card.Title>
+          <Card.Description>Enter your email and password to continue</Card.Description>
         </Card.Header>
         <Form onSubmit={handleSubmit}>
           <Card.Content>
             <div className="flex flex-col gap-4">
-              <TextField
-                isRequired
-                autoComplete="email"
-                name="email"
-                type="email"
-                validate={(value) =>
-                  EMAIL_PATTERN.test(value) ? null : 'Please enter a valid email address'
-                }
-              >
+              <TextField isRequired autoComplete="email" name="email" type="email">
                 <Label>Email</Label>
                 <Input className="min-h-11" placeholder="you@example.com" variant="secondary" />
                 <FieldError />
@@ -115,13 +95,9 @@ export default function RegisterPage() {
 
               <TextField
                 isRequired
-                autoComplete="new-password"
-                minLength={8}
+                autoComplete="current-password"
                 name="password"
                 type={isPasswordVisible ? 'text' : 'password'}
-                validate={(value) =>
-                  value.length >= 8 ? null : 'Password must be at least 8 characters'
-                }
               >
                 <Label>Password</Label>
                 <div className="relative">
@@ -137,7 +113,6 @@ export default function RegisterPage() {
                     {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
                   </Button>
                 </div>
-                <Description>Must be at least 8 characters</Description>
                 <FieldError />
               </TextField>
 
@@ -150,10 +125,10 @@ export default function RegisterPage() {
           </Card.Content>
           <Card.Footer className="mt-4 flex flex-col gap-3">
             <Button className="w-full" isPending={isSubmitting} size="lg" type="submit">
-              {isSubmitting ? 'Creating account...' : 'Create account'}
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-center text-sm text-muted">
-              Already have an account? <Link href="/login">Sign in</Link>
+              Don&apos;t have an account? <Link href="/register">Sign up</Link>
             </p>
           </Card.Footer>
         </Form>
