@@ -23,6 +23,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# python (vendored skill scripts)
+__pycache__/
+*.pyc
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
