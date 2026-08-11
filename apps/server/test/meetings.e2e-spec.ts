@@ -18,6 +18,10 @@ interface CreateMeetingPayload {
   participants: string[];
 }
 
+interface AuthResponseBody {
+  accessToken: string;
+}
+
 function buildMeetingPayload(overrides: Partial<CreateMeetingPayload> = {}): CreateMeetingPayload {
   return {
     title: `Team sync ${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -27,8 +31,13 @@ function buildMeetingPayload(overrides: Partial<CreateMeetingPayload> = {}): Cre
   };
 }
 
+function uniqueEmail(): string {
+  return `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+}
+
 describe('Meetings (e2e)', () => {
   let app: INestApplication<App>;
+  let authHeader: string;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -38,10 +47,38 @@ describe('Meetings (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
+
+    const registerResponse = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: uniqueEmail(), password: 'Password123!' })
+      .expect(201);
+    const { accessToken } = registerResponse.body as AuthResponseBody;
+    authHeader = `Bearer ${accessToken}`;
   });
 
   afterEach(async () => {
     await app.close();
+  });
+
+  describe('authorization', () => {
+    it('rejects POST /meetings with no Authorization header with 401', async () => {
+      await request(app.getHttpServer()).post('/meetings').send(buildMeetingPayload()).expect(401);
+    });
+
+    it('rejects GET /meetings with no Authorization header with 401', async () => {
+      await request(app.getHttpServer()).get('/meetings').expect(401);
+    });
+
+    it('rejects GET /meetings/:id with no Authorization header with 401', async () => {
+      await request(app.getHttpServer()).get(`/meetings/${randomUUID()}`).expect(401);
+    });
+
+    it('rejects requests with an invalid token with 401', async () => {
+      await request(app.getHttpServer())
+        .get('/meetings')
+        .set('Authorization', 'Bearer not-a-valid-token')
+        .expect(401);
+    });
   });
 
   describe('POST /meetings', () => {
@@ -50,6 +87,7 @@ describe('Meetings (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/meetings')
+        .set('Authorization', authHeader)
         .send(payload)
         .expect(201);
 
@@ -65,6 +103,7 @@ describe('Meetings (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/meetings')
+        .set('Authorization', authHeader)
         .send(payload)
         .expect(201);
 
@@ -75,7 +114,11 @@ describe('Meetings (e2e)', () => {
     it('rejects a missing title with 400 Bad Request', async () => {
       const { date, participants } = buildMeetingPayload();
 
-      await request(app.getHttpServer()).post('/meetings').send({ date, participants }).expect(400);
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', authHeader)
+        .send({ date, participants })
+        .expect(400);
     });
 
     it('rejects a missing date with 400 Bad Request', async () => {
@@ -83,6 +126,7 @@ describe('Meetings (e2e)', () => {
 
       await request(app.getHttpServer())
         .post('/meetings')
+        .set('Authorization', authHeader)
         .send({ title, participants })
         .expect(400);
     });
@@ -90,25 +134,41 @@ describe('Meetings (e2e)', () => {
     it('rejects an invalid date with 400 Bad Request', async () => {
       const payload = buildMeetingPayload({ date: 'not-a-date' });
 
-      await request(app.getHttpServer()).post('/meetings').send(payload).expect(400);
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(400);
     });
 
     it('rejects a missing participants field with 400 Bad Request', async () => {
       const { title, date } = buildMeetingPayload();
 
-      await request(app.getHttpServer()).post('/meetings').send({ title, date }).expect(400);
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', authHeader)
+        .send({ title, date })
+        .expect(400);
     });
 
     it('rejects participants that is not an array with 400 Bad Request', async () => {
       const payload = { ...buildMeetingPayload(), participants: 'alice@example.com' };
 
-      await request(app.getHttpServer()).post('/meetings').send(payload).expect(400);
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(400);
     });
 
     it('rejects a participants array containing non-string values with 400 Bad Request', async () => {
       const payload = { ...buildMeetingPayload(), participants: [123, 456] };
 
-      await request(app.getHttpServer()).post('/meetings').send(payload).expect(400);
+      await request(app.getHttpServer())
+        .post('/meetings')
+        .set('Authorization', authHeader)
+        .send(payload)
+        .expect(400);
     });
   });
 
@@ -117,11 +177,15 @@ describe('Meetings (e2e)', () => {
       const payload = buildMeetingPayload();
       const created = await request(app.getHttpServer())
         .post('/meetings')
+        .set('Authorization', authHeader)
         .send(payload)
         .expect(201);
       const createdBody = created.body as MeetingResponseBody;
 
-      const response = await request(app.getHttpServer()).get('/meetings').expect(200);
+      const response = await request(app.getHttpServer())
+        .get('/meetings')
+        .set('Authorization', authHeader)
+        .expect(200);
 
       const meetings = response.body as MeetingResponseBody[];
       expect(Array.isArray(meetings)).toBe(true);
@@ -140,12 +204,14 @@ describe('Meetings (e2e)', () => {
       const payload = buildMeetingPayload();
       const created = await request(app.getHttpServer())
         .post('/meetings')
+        .set('Authorization', authHeader)
         .send(payload)
         .expect(201);
       const createdBody = created.body as MeetingResponseBody;
 
       const response = await request(app.getHttpServer())
         .get(`/meetings/${createdBody.id}`)
+        .set('Authorization', authHeader)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -156,7 +222,10 @@ describe('Meetings (e2e)', () => {
     });
 
     it('returns 404 Not Found for a non-existent id', async () => {
-      await request(app.getHttpServer()).get(`/meetings/${randomUUID()}`).expect(404);
+      await request(app.getHttpServer())
+        .get(`/meetings/${randomUUID()}`)
+        .set('Authorization', authHeader)
+        .expect(404);
     });
   });
 });

@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Meeting } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
 import { MeetingsService } from './meetings.service';
 
+@UseGuards(JwtAuthGuard)
 @Controller('meetings')
 export class MeetingsController {
   constructor(private readonly meetingsService: MeetingsService) {}
