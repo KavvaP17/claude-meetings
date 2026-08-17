@@ -34,6 +34,10 @@ pnpm test:e2e -- -t "rejects an incorrect password with 401 Unauthorized"
 - ESLint runs `typescript-eslint`'s `recommendedTypeChecked` plus `eslint-plugin-prettier/recommended`, meaning Prettier violations surface as ESLint errors here (unlike the client app, which uses `eslint-config-prettier` instead). Prettier's actual rules come from the repo root (`../../.prettierrc.json`) — there is no per-app `.prettierrc`.
 - Jest's `expect.any(...)` matchers are typed `any`, which trips `@typescript-eslint/no-unsafe-assignment` when used inside an object literal passed to `toEqual`. Prefer separate assertions (e.g. `expect(Object.keys(body)).toEqual([...])` + `expect(typeof body.x).toBe('string')`) over `toEqual({ x: expect.any(String) })`.
 
+## In-progress feature: meeting file upload
+
+While implementing @docs/plan-meeting-file-upload-and-display.md (Фазы 1-3, backend), read @docs/research-meeting-file-upload-and-display.md first — it fixes the technical decisions (multer/`diskStorage` setup and version, `ParseFilePipe` validation, `FilesStorageService` abstraction, Prisma schema for `MeetingFile`, API contract) so they aren't re-derived or re-litigated during implementation. Remove this section once the feature has shipped and its decisions are reflected in the rest of this file.
+
 ## Keeping this file current
 
 If the module structure, testing setup, or lint/format tooling for this app changes, update this file (and the root `CLAUDE.md` if the change affects the workspace as a whole) in the same change.

@@ -40,6 +40,10 @@ Whenever a new page needs to be usable only by a logged-in user, wrap it with `u
 
 Any change to this app's UI (new pages/components, edits to existing markup, styling, or interaction behavior) must be checked against the `ui-ux-pro-max` skill (`.claude/skills/ui-ux-pro-max` at the repo root) before the change is considered done. Invoke the skill and run its `scripts/search.py` against the relevant domains (`ux` for accessibility/touch/forms, `color`/`typography` for visual changes) to check the change against its rule database, and fix what it flags (or note explicitly why a flagged item doesn't apply) before wrapping up.
 
+## In-progress feature: meeting file upload
+
+While implementing @docs/plan-meeting-file-upload-and-display.md (Фазы 4-5, frontend), read @docs/research-meeting-file-upload-and-display.md first — it fixes the technical decisions (why `XMLHttpRequest` over `fetch` for upload progress, `uploadMeetingFile` shape, client/server validation constant duplication) so they aren't re-derived or re-litigated during implementation. Remove this section once the feature has shipped and its decisions are reflected in the rest of this file.
+
 ## Keeping this file current
 
 If the route structure, testing setup, or lint/format tooling for this app changes, update this file (and the root `CLAUDE.md` if the change affects the workspace as a whole) in the same change.
