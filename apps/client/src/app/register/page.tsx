@@ -125,7 +125,11 @@ export default function RegisterPage() {
               >
                 <Label>Password</Label>
                 <div className="relative">
-                  <Input className="min-h-11 pe-10" placeholder="••••••••" variant="secondary" />
+                  <Input
+                    className="min-h-11 w-full pe-10"
+                    placeholder="••••••••"
+                    variant="secondary"
+                  />
                   <Button
                     isIconOnly
                     aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
