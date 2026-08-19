@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -98,7 +98,7 @@ describe('Meeting files (e2e)', () => {
         .expect(401);
     });
 
-    it('returns 404 when the meeting does not exist', async () => {
+    it('returns 404 when the meeting does not exist, and does not leave the file on disk', async () => {
       const { authHeader } = await registerUser(app);
 
       await request(app.getHttpServer())
@@ -109,9 +109,11 @@ describe('Meeting files (e2e)', () => {
           contentType: 'audio/mpeg',
         })
         .expect(404);
+
+      expect(readdirSync(storageDir)).toEqual([]);
     });
 
-    it('returns 403 when the requester is not the meeting creator', async () => {
+    it('returns 403 when the requester is not the meeting creator, and does not leave the file on disk', async () => {
       const creator = await registerUser(app);
       const meeting = await createMeeting(app, creator.authHeader);
       const otherUser = await registerUser(app);
@@ -124,6 +126,8 @@ describe('Meeting files (e2e)', () => {
           contentType: 'audio/mpeg',
         })
         .expect(403);
+
+      expect(readdirSync(storageDir)).toEqual([]);
     });
 
     it('uploads a file for the meeting creator and returns metadata without storagePath', async () => {
