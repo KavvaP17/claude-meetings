@@ -5,6 +5,7 @@ import { getMeetings, type Meeting } from '@/lib/api/meetings';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
 import { Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -81,17 +82,22 @@ export default function Home() {
             ) : (
               <ul className="flex flex-col divide-y divide-border">
                 {recentMeetings.map((meeting) => (
-                  <li key={meeting.id} className="flex items-center justify-between gap-4 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{meeting.title}</p>
-                      <p className="text-sm text-muted">
-                        {dateFormatter.format(new Date(meeting.date))}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-sm text-muted">
-                      {meeting.participants.length} participant
-                      {meeting.participants.length === 1 ? '' : 's'}
-                    </span>
+                  <li key={meeting.id}>
+                    <Link
+                      className="flex items-center justify-between gap-4 py-3 hover:bg-muted/10"
+                      href={`/meetings/${meeting.id}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{meeting.title}</p>
+                        <p className="text-sm text-muted">
+                          {dateFormatter.format(new Date(meeting.date))}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm text-muted">
+                        {meeting.participants.length} participant
+                        {meeting.participants.length === 1 ? '' : 's'}
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>
