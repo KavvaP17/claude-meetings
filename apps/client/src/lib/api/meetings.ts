@@ -6,6 +6,21 @@ export interface Meeting {
   date: string;
   participants: string[];
   createdAt: string;
+  creatorId: string;
+}
+
+export interface MeetingFile {
+  id: string;
+  fileName: string;
+  sizeBytes: number;
+  mimeType: string;
+  status: string;
+  createdAt: string;
+  uploadedById: string;
+}
+
+export interface MeetingWithFiles extends Meeting {
+  files: MeetingFile[];
 }
 
 export interface CreateMeetingPayload {
@@ -23,6 +38,14 @@ export function getMeetings(accessToken: string): Promise<Meeting[]> {
     '/meetings',
     { headers: authHeaders(accessToken) },
     'Failed to load meetings.',
+  );
+}
+
+export function getMeeting(accessToken: string, id: string): Promise<MeetingWithFiles> {
+  return apiFetch<MeetingWithFiles>(
+    `/meetings/${id}`,
+    { headers: authHeaders(accessToken) },
+    'Failed to load meeting.',
   );
 }
 
