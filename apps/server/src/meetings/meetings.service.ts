@@ -7,12 +7,13 @@ import { CreateMeetingDto } from './dto/create-meeting.dto';
 export class MeetingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateMeetingDto): Promise<Meeting> {
+  create(dto: CreateMeetingDto, creatorId: string): Promise<Meeting> {
     return this.prisma.meeting.create({
       data: {
         title: dto.title,
         date: new Date(dto.date),
         participants: dto.participants,
+        creatorId,
       },
     });
   }
