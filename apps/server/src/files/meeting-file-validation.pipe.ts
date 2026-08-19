@@ -4,22 +4,24 @@ import {
   MaxFileSizeValidator,
   ParseFilePipe,
 } from '@nestjs/common';
-import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from './files.constants';
+import { ConfigService } from '@nestjs/config';
+import { getAllowedMimeTypes, getMaxFileSizeBytes } from './files.constants';
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-const ALLOWED_MIME_TYPE_PATTERN = new RegExp(
-  `^(${ALLOWED_MIME_TYPES.map(escapeRegExp).join('|')})$`,
-);
-
 // Final 400 layer for @UploadedFile() (Фаза 3) — multer's limits/fileFilter (files.module.ts) are the earlier barrier.
-export function createMeetingFileValidationPipe(): ParseFilePipe {
+export function createMeetingFileValidationPipe(configService: ConfigService): ParseFilePipe {
+  const allowedMimeTypePattern = new RegExp(
+    `^(${getAllowedMimeTypes(configService).map(escapeRegExp).join('|')})$`,
+  );
+
   return new ParseFilePipe({
     validators: [
-      new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES }),
-      new FileTypeValidator({ fileType: ALLOWED_MIME_TYPE_PATTERN }),
+      new MaxFileSizeValidator({ maxSize: getMaxFileSizeBytes(configService) }),
+      // skipMagicNumbersValidation: diskStorage never populates file.buffer, so magic-number sniffing would reject every file.
+      new FileTypeValidator({ fileType: allowedMimeTypePattern, skipMagicNumbersValidation: true }),
     ],
     exceptionFactory: (error) => new BadRequestException(`Недопустимый файл: ${error}`),
   });
