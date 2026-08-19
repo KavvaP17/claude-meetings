@@ -7,6 +7,8 @@ export interface AuthenticatedUser {
   email: string;
 }
 
+export type AuthenticatedRequest = Request & { user: AuthenticatedUser };
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}

@@ -12,6 +12,7 @@ import {
   getMaxFileSizeBytes,
   resolveStorageDir,
 } from './files.constants';
+import { MeetingFileValidationPipe } from './meeting-file-validation.pipe';
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import {
       },
     }),
   ],
-  providers: [FilesStorageService],
-  exports: [MulterModule, FilesStorageService],
+  providers: [FilesStorageService, MeetingFileValidationPipe],
+  exports: [MulterModule, FilesStorageService, MeetingFileValidationPipe],
 })
 export class FilesModule {}

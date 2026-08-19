@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -24,5 +24,10 @@ export class FilesStorageService implements OnModuleInit {
 
   resolvePath(storagePath: string): string {
     return join(this.storageDir, storagePath);
+  }
+
+  // force: true — a caller cleaning up after a rejected upload shouldn't fail if the file is already gone.
+  async delete(storagePath: string): Promise<void> {
+    await rm(this.resolvePath(storagePath), { force: true });
   }
 }

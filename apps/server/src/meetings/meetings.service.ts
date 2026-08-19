@@ -2,6 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Meeting } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
+import {
+  MeetingWithFilesResponseDto,
+  toMeetingWithFilesResponseDto,
+} from './dto/meeting-response.dto';
 
 @Injectable()
 export class MeetingsService {
@@ -22,11 +26,14 @@ export class MeetingsService {
     return this.prisma.meeting.findMany();
   }
 
-  async findOne(id: string): Promise<Meeting> {
-    const meeting = await this.prisma.meeting.findUnique({ where: { id } });
+  async findOne(id: string): Promise<MeetingWithFilesResponseDto> {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { id },
+      include: { files: true },
+    });
     if (!meeting) {
       throw new NotFoundException(`Meeting with id ${id} not found`);
     }
-    return meeting;
+    return toMeetingWithFilesResponseDto(meeting);
   }
 }
