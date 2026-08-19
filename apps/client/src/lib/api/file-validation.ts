@@ -7,7 +7,8 @@ export const ALLOWED_EXTENSIONS = ['.mp3', '.wav', '.m4a', '.mp4'];
 export const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024;
 
 export function validateMeetingFile(file: File): string | null {
-  const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+  const dotIndex = file.name.lastIndexOf('.');
+  const extension = dotIndex === -1 ? '' : file.name.slice(dotIndex).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(extension)) {
     return `Unsupported file type. Allowed formats: ${ALLOWED_EXTENSIONS.join(', ')}.`;
   }
