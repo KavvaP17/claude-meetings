@@ -28,6 +28,16 @@ interface AuthResponseBody {
   accessToken: string;
 }
 
+// `process.env.KEY = undefined` sets the literal string "undefined" (env values are always
+// strings), not an unset key — must delete instead when there was no previous value.
+function restoreEnv(key: string, previousValue: string | undefined): void {
+  if (previousValue === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = previousValue;
+  }
+}
+
 function uniqueEmail(): string {
   return `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
@@ -69,7 +79,7 @@ describe('Meeting files (e2e)', () => {
   });
 
   afterAll(() => {
-    process.env.STORAGE_DIR = previousStorageDir;
+    restoreEnv('STORAGE_DIR', previousStorageDir);
     rmSync(storageDir, { recursive: true, force: true });
   });
 
@@ -164,6 +174,74 @@ describe('Meeting files (e2e)', () => {
           contentType: 'application/octet-stream',
         })
         .expect(400);
+    });
+
+    it('creates independent records for multiple files uploaded to the same meeting', async () => {
+      const creator = await registerUser(app);
+      const meeting = await createMeeting(app, creator.authHeader);
+
+      const first = await request(app.getHttpServer())
+        .post(`/meetings/${meeting.id}/files`)
+        .set('Authorization', creator.authHeader)
+        .attach('file', Buffer.from('fake audio content one'), {
+          filename: 'recording-1.mp3',
+          contentType: 'audio/mpeg',
+        })
+        .expect(201);
+
+      const second = await request(app.getHttpServer())
+        .post(`/meetings/${meeting.id}/files`)
+        .set('Authorization', creator.authHeader)
+        .attach('file', Buffer.from('fake audio content two'), {
+          filename: 'recording-2.mp3',
+          contentType: 'audio/mpeg',
+        })
+        .expect(201);
+
+      const firstBody = first.body as MeetingFileResponseBody;
+      const secondBody = second.body as MeetingFileResponseBody;
+      expect(firstBody.id).not.toBe(secondBody.id);
+
+      const response = await request(app.getHttpServer())
+        .get(`/meetings/${meeting.id}`)
+        .set('Authorization', creator.authHeader)
+        .expect(200);
+
+      const body = response.body as MeetingResponseBody;
+      expect(body.files).toHaveLength(2);
+      expect(body.files.map((file) => file.fileName).sort()).toEqual([
+        'recording-1.mp3',
+        'recording-2.mp3',
+      ]);
+    });
+  });
+
+  describe('POST /meetings/:id/files - file size limit', () => {
+    let previousMaxFileSizeBytes: string | undefined;
+
+    beforeAll(() => {
+      previousMaxFileSizeBytes = process.env.MAX_FILE_SIZE_BYTES;
+      process.env.MAX_FILE_SIZE_BYTES = '1024';
+    });
+
+    afterAll(() => {
+      restoreEnv('MAX_FILE_SIZE_BYTES', previousMaxFileSizeBytes);
+    });
+
+    it('rejects a file exceeding the configured max size', async () => {
+      const creator = await registerUser(app);
+      const meeting = await createMeeting(app, creator.authHeader);
+
+      // multer's `limits.fileSize` (the barrier Фаза 2 built) rejects the stream before it's fully
+      // read — Nest maps that to 413 Payload Too Large, not 400 (see files.module.ts / research doc §2).
+      await request(app.getHttpServer())
+        .post(`/meetings/${meeting.id}/files`)
+        .set('Authorization', creator.authHeader)
+        .attach('file', Buffer.alloc(2048), {
+          filename: 'oversized.mp3',
+          contentType: 'audio/mpeg',
+        })
+        .expect(413);
     });
   });
 
