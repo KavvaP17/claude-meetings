@@ -12,6 +12,14 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeStyle: 'short',
 });
 
+const FILE_STATUS_COLORS: Record<string, 'success' | 'warning' | 'danger'> = {
+  UPLOADED: 'success',
+};
+
+function fileStatusColor(status: string): 'success' | 'warning' | 'danger' | 'default' {
+  return FILE_STATUS_COLORS[status] ?? 'default';
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KB', 'MB', 'GB'];
@@ -84,14 +92,14 @@ export default function MeetingDetailPage() {
           ← Back to meetings
         </Button>
 
-        {meeting === null ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner aria-label="Loading meeting" size="lg" />
-          </div>
-        ) : loadError ? (
+        {loadError ? (
           <p className="text-sm text-danger" role="alert">
             {loadError}
           </p>
+        ) : meeting === null ? (
+          <div className="flex items-center justify-center py-16">
+            <Spinner aria-label="Loading meeting" size="lg" />
+          </div>
         ) : (
           <>
             <Card>
@@ -136,7 +144,7 @@ export default function MeetingDetailPage() {
                             {dateFormatter.format(new Date(file.createdAt))}
                           </p>
                         </div>
-                        <Chip className="shrink-0" color="success">
+                        <Chip className="shrink-0" color={fileStatusColor(file.status)}>
                           {file.status}
                         </Chip>
                       </li>

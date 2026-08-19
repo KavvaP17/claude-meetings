@@ -69,14 +69,14 @@ export default function Home() {
             </Card.Description>
           </Card.Header>
           <Card.Content>
-            {meetings === null ? (
-              <div className="flex items-center justify-center py-8">
-                <Spinner aria-label="Loading meetings" />
-              </div>
-            ) : loadError ? (
+            {loadError ? (
               <p className="text-sm text-danger" role="alert">
                 {loadError}
               </p>
+            ) : meetings === null ? (
+              <div className="flex items-center justify-center py-8">
+                <Spinner aria-label="Loading meetings" />
+              </div>
             ) : recentMeetings.length === 0 ? (
               <p className="text-sm text-muted">No meetings yet. Create your first one below.</p>
             ) : (
