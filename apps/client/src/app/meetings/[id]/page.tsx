@@ -1,11 +1,22 @@
 'use client';
 
 import { ApiError } from '@/lib/api/client';
-import { getMeeting, type MeetingWithFiles } from '@/lib/api/meetings';
+import {
+  validateMeetingFile,
+  ALLOWED_EXTENSIONS,
+  MAX_FILE_SIZE_BYTES,
+} from '@/lib/api/file-validation';
+import {
+  getMeeting,
+  uploadMeetingFile,
+  type MeetingFile,
+  type MeetingWithFiles,
+} from '@/lib/api/meetings';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
-import { Button, Card, Chip, Spinner } from '@heroui/react';
+import { formatFileSize } from '@/lib/format';
+import { Button, Card, Chip, ProgressBar, Spinner } from '@heroui/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
@@ -20,18 +31,6 @@ function fileStatusColor(status: string): 'success' | 'warning' | 'danger' | 'de
   return FILE_STATUS_COLORS[status] ?? 'default';
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB'];
-  let value = bytes;
-  let unitIndex = -1;
-  do {
-    value /= 1024;
-    unitIndex++;
-  } while (value >= 1024 && unitIndex < units.length - 1);
-  return `${value.toFixed(1)} ${units[unitIndex]}`;
-}
-
 export default function MeetingDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
@@ -39,6 +38,11 @@ export default function MeetingDetailPage() {
   const [meeting, setMeeting] = useState<MeetingWithFiles | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -56,6 +60,47 @@ export default function MeetingDetailPage() {
         setLoadError(error instanceof ApiError ? error.message : 'Failed to load meeting.');
       });
   }, [session, id, logout]);
+
+  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !session) return;
+
+    const validationError = validateMeetingFile(file);
+    if (validationError) {
+      setUploadError(validationError);
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+    setUploadProgress(0);
+    try {
+      const uploadedFile = await uploadMeetingFile(
+        session.accessToken,
+        id,
+        file,
+        setUploadProgress,
+      );
+      setMeeting((prev) => (prev ? { ...prev, files: [...prev.files, uploadedFile] } : prev));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        logout();
+        return;
+      }
+      setUploadError(
+        error instanceof ApiError
+          ? error.status === 403
+            ? 'Only the meeting creator can upload files.'
+            : error.status === 404
+              ? 'This meeting no longer exists.'
+              : error.message
+          : 'Something went wrong. Please try again.',
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (!session) {
     return (
@@ -84,6 +129,8 @@ export default function MeetingDetailPage() {
       </div>
     );
   }
+
+  const isCreator = meeting !== null && session.userId === meeting.creatorId;
 
   return (
     <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
@@ -135,7 +182,7 @@ export default function MeetingDetailPage() {
                   <p className="text-sm text-muted">No files yet.</p>
                 ) : (
                   <ul className="flex flex-col divide-y divide-border">
-                    {meeting.files.map((file) => (
+                    {meeting.files.map((file: MeetingFile) => (
                       <li key={file.id} className="flex items-center justify-between gap-4 py-3">
                         <div className="min-w-0">
                           <p className="truncate font-medium text-foreground">{file.fileName}</p>
@@ -152,6 +199,45 @@ export default function MeetingDetailPage() {
                   </ul>
                 )}
               </Card.Content>
+              {isCreator ? (
+                <Card.Footer className="flex flex-col items-stretch gap-3">
+                  <input
+                    ref={fileInputRef}
+                    aria-label="Choose a file to upload"
+                    accept={ALLOWED_EXTENSIONS.join(',')}
+                    className="sr-only"
+                    disabled={isUploading}
+                    tabIndex={-1}
+                    type="file"
+                    onChange={handleFileSelected}
+                  />
+                  <Button
+                    isDisabled={isUploading}
+                    isPending={isUploading}
+                    size="lg"
+                    variant="outline"
+                    onPress={() => fileInputRef.current?.click()}
+                  >
+                    {isUploading ? 'Uploading...' : 'Upload a file'}
+                  </Button>
+                  {isUploading ? (
+                    <ProgressBar aria-label="Upload progress" value={uploadProgress}>
+                      <ProgressBar.Output />
+                      <ProgressBar.Track>
+                        <ProgressBar.Fill />
+                      </ProgressBar.Track>
+                    </ProgressBar>
+                  ) : null}
+                  <p className="text-xs text-muted">
+                    mp3, wav, m4a, or mp4, up to {formatFileSize(MAX_FILE_SIZE_BYTES)}
+                  </p>
+                  {uploadError ? (
+                    <p className="text-sm text-danger" role="alert">
+                      {uploadError}
+                    </p>
+                  ) : null}
+                </Card.Footer>
+              ) : null}
             </Card>
           </>
         )}
