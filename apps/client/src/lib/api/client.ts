@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-function extractErrorMessage(body: unknown, fallback: string): string {
+export function extractErrorMessage(body: unknown, fallback: string): string {
   if (body && typeof body === 'object' && 'message' in body) {
     const { message } = body as { message: unknown };
     if (typeof message === 'string') return message;
