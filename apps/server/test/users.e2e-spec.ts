@@ -70,4 +70,22 @@ describe('Users (e2e)', () => {
         .expect(401);
     });
   });
+
+  describe('PATCH /users/me', () => {
+    it('updates the authenticated user name and returns the updated profile', async () => {
+      const response = await request(app.getHttpServer())
+        .patch('/users/me')
+        .set('Authorization', authHeader)
+        .send({ name: 'New Name' })
+        .expect(200);
+
+      const body = response.body as UserProfileResponseBody;
+      expect(body.email).toBe(email);
+      expect(body.name).toBe('New Name');
+    });
+
+    it('rejects a request with no Authorization header with 401', async () => {
+      await request(app.getHttpServer()).patch('/users/me').send({ name: 'New Name' }).expect(401);
+    });
+  });
 });
