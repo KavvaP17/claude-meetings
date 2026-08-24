@@ -1,15 +1,26 @@
-const { execSync } = require('child_process')
-const fs = require('fs')
+const { execFileSync } = require('child_process');
+const fs = require('fs');
 
-const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'))
+const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'));
 
 // Сбрасываем счётчик итераций
-fs.writeFileSync('.claude/ralph.iterations.json', JSON.stringify({ count: 0, phaseIndex: 0 }))
+fs.writeFileSync('.claude/ralph.iterations.json', JSON.stringify({ count: 0, phaseIndex: 0 }));
+
+const phase = config.phases
+  ? config.phases[0]
+  : { milestone: config.milestone, branch: config.branch };
+
+if (!phase) {
+  console.log('🎉 Нечего запускать: config.phases пуст.');
+  process.exit(0);
+}
 
 // Запускаем первую итерацию
 const prompt = config.prompt
-  .replace('{milestone}', config.phases[0].milestone)
-  .replace('{branch}', config.phases[0].branch)
-console.log(`🚀 Запускаем Ralph для milestone: ${config.phases[0].milestone}`)
+  .replace('{milestone}', phase.milestone)
+  .replace('{branch}', phase.branch);
+console.log(`🚀 Запускаем Ralph для milestone: ${phase.milestone}`);
 
-execSync(`claude -p "${prompt}" --max-turns ${config.maxTurns}`, { stdio: 'inherit' })
+execFileSync('claude', ['-p', prompt, '--max-turns', String(config.maxTurns)], {
+  stdio: 'inherit',
+});
