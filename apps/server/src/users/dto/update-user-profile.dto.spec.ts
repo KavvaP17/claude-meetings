@@ -47,6 +47,20 @@ describe('UpdateUserProfileDto', () => {
     expect(errors[0].property).toBe('name');
   });
 
+  it('fails validation when name is whitespace-only', async () => {
+    const errors = await validateDto({ name: '   ' });
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].property).toBe('name');
+  });
+
+  it('fails validation when name is null', async () => {
+    const errors = await validateDto({ name: null });
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].property).toBe('name');
+  });
+
   it('fails validation when avatarUrl is not a string', async () => {
     const errors = await validateDto({ avatarUrl: 123 });
 

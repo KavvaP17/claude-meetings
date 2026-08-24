@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, Matches, ValidateIf } from 'class-validator';
 
 export class UpdateUserProfileDto {
-  @IsOptional()
+  @ValidateIf((dto: UpdateUserProfileDto) => dto.name !== undefined)
   @IsString()
-  @IsNotEmpty()
+  @Matches(/\S/, { message: 'name must not be empty or whitespace only' })
   name?: string;
 
   @IsOptional()
