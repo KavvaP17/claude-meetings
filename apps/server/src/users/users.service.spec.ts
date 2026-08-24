@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -30,6 +31,29 @@ describe('UsersService', () => {
       const found = await service.findById('00000000-0000-0000-0000-000000000000');
 
       expect(found).toBeNull();
+    });
+  });
+
+  describe('getProfile', () => {
+    it('returns the profile DTO for an existing user, excluding the password', async () => {
+      const email = `get-profile-${Date.now()}@example.com`;
+      const created = await service.create(email, 'password123');
+
+      const profile = await service.getProfile(created.id);
+
+      expect(profile).toEqual({
+        id: created.id,
+        email,
+        name: null,
+        avatarUrl: null,
+        createdAt: created.createdAt,
+      });
+    });
+
+    it('throws NotFoundException when no user matches the id', async () => {
+      await expect(service.getProfile('00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
