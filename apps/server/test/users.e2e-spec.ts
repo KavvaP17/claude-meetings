@@ -3,14 +3,10 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import type { UserProfileResponseDto } from '../src/users/dto/user-profile-response.dto';
 
-interface UserProfileResponseBody {
-  id: string;
-  email: string;
-  name: string | null;
-  avatarUrl: string | null;
-  createdAt: string;
-}
+// createdAt is serialized to a string over the wire, unlike the service-layer DTO's `Date`.
+type UserProfileResponseBody = Omit<UserProfileResponseDto, 'createdAt'> & { createdAt: string };
 
 interface AuthResponseBody {
   accessToken: string;
