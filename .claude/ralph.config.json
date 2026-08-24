@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "maxIterations": 10,
+  "maxTurns": 500,
+  "prompt": "Прочитай .claude/ralph.md и следуй правилам оттуда. Возьми следующую открытую Issue из milestone '{milestone}' и реализуй его в '{branch}'",
+  "phases": [
+    {
+      "milestone": "Фаза 1: База данных и чтение профиля (Tracer Bullet)",
+      "branch": "feature/phase-1-profile"
+    }
+  ]
+}
