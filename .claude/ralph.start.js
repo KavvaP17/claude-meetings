@@ -1,5 +1,26 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
+
+// On Windows, npm's global `claude` shim is a .cmd wrapper, which Node refuses to
+// spawn directly (EINVAL) and which requires shell:true to run — but shell:true on
+// Windows joins argv with plain spaces and doesn't quote them for cmd.exe, so a
+// multi-word prompt gets split into separate args. Resolving straight to the real
+// claude.exe (next to node.exe, since it's installed into the same npm prefix)
+// sidesteps the shell entirely and preserves argv exactly.
+function resolveClaudeBin() {
+  if (process.platform !== 'win32') return 'claude';
+  return path.join(
+    path.dirname(process.execPath),
+    'node_modules',
+    '@anthropic-ai',
+    'claude-code',
+    'bin',
+    'claude.exe',
+  );
+}
+
+const claudeBin = resolveClaudeBin();
 
 const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'));
 
@@ -21,6 +42,6 @@ const prompt = config.prompt
   .replace('{branch}', phase.branch);
 console.log(`🚀 Запускаем Ralph для milestone: ${phase.milestone}`);
 
-execFileSync('claude', ['-p', prompt, '--max-turns', String(config.maxTurns)], {
+execFileSync(claudeBin, ['-p', prompt, '--max-turns', String(config.maxTurns)], {
   stdio: 'inherit',
 });

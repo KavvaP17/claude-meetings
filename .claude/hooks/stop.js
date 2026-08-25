@@ -1,5 +1,21 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
+
+// See ralph.start.js for why this avoids shell:true on Windows.
+function resolveClaudeBin() {
+  if (process.platform !== 'win32') return 'claude';
+  return path.join(
+    path.dirname(process.execPath),
+    'node_modules',
+    '@anthropic-ai',
+    'claude-code',
+    'bin',
+    'claude.exe',
+  );
+}
+
+const claudeBin = resolveClaudeBin();
 
 const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'));
 
@@ -29,7 +45,7 @@ if (counter.count >= config.maxIterations) {
 function runClaude(prompt, { model, maxTurns } = {}) {
   const args = ['-p', prompt, '--max-turns', String(maxTurns ?? config.maxTurns)];
   if (model) args.push('--model', model);
-  execFileSync('claude', args, { stdio: 'inherit' });
+  execFileSync(claudeBin, args, { stdio: 'inherit' });
 }
 
 function nextIssues(milestone) {

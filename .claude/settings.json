@@ -3,8 +3,9 @@
     "allow": [
       "Edit(*)",
       "Write(*)",
-      "Bash(npm run test)",
-      "Bash(npm run test:e2e)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm --filter server test*)",
+      "Bash(pnpm --filter client test*)",
       "Bash(git *)",
       "Bash(gh *)",
       "Bash(npx prisma *)"
