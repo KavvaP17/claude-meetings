@@ -17,6 +17,21 @@ function resolveClaudeBin() {
 
 const claudeBin = resolveClaudeBin();
 
+// On Windows, `gh` on PATH (as seen by a plain child_process spawn) resolves to a
+// bash shim that execs the real gh.exe — Windows CreateProcess can't run a
+// shebang script directly and execFileSync throws ENOENT before this hook ever
+// logs anything, so the failure looks like the Stop hook silently not firing.
+function resolveGhBin() {
+  if (process.platform !== 'win32') return 'gh';
+  const candidates = [
+    'C:/Program Files/GitHub CLI/gh.exe',
+    'C:/Program Files (x86)/GitHub CLI/gh.exe',
+  ];
+  return candidates.find((p) => fs.existsSync(p)) ?? 'gh';
+}
+
+const ghBin = resolveGhBin();
+
 const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'));
 
 if (!config.active) process.exit(0);
@@ -49,7 +64,7 @@ function runClaude(prompt, { model, maxTurns } = {}) {
 }
 
 function nextIssues(milestone) {
-  const output = execFileSync('gh', [
+  const output = execFileSync(ghBin, [
     'issue',
     'list',
     '--milestone',
