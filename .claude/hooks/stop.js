@@ -17,6 +17,21 @@ function resolveClaudeBin() {
 
 const claudeBin = resolveClaudeBin();
 
+// On Windows, `gh` on PATH (as seen by a plain child_process spawn) resolves to a
+// bash shim that execs the real gh.exe — Windows CreateProcess can't run a
+// shebang script directly and execFileSync throws ENOENT before this hook ever
+// logs anything, so the failure looks like the Stop hook silently not firing.
+function resolveGhBin() {
+  if (process.platform !== 'win32') return 'gh';
+  const candidates = [
+    'C:/Program Files/GitHub CLI/gh.exe',
+    'C:/Program Files (x86)/GitHub CLI/gh.exe',
+  ];
+  return candidates.find((p) => fs.existsSync(p)) ?? 'gh';
+}
+
+const ghBin = resolveGhBin();
+
 const config = JSON.parse(fs.readFileSync('.claude/ralph.config.json', 'utf8'));
 
 if (!config.active) process.exit(0);
@@ -49,7 +64,7 @@ function runClaude(prompt, { model, maxTurns } = {}) {
 }
 
 function nextIssues(milestone) {
-  const output = execFileSync('gh', [
+  const output = execFileSync(ghBin, [
     'issue',
     'list',
     '--milestone',
@@ -81,20 +96,27 @@ if (issues.length > 0) {
   runClaude(prompt);
 } else {
   console.log(`✅ Фаза ${counter.phaseIndex + 1} завершена. Создаём PR...`);
-  runClaude(`Создай PR из ветки ${phase.branch} в master с названием 'feat: ${phase.milestone}'.`, {
-    model: 'claude-opus-5',
-    maxTurns: 10,
-  });
+
+  // Advance the counter *before* spawning the PR/review sessions below, not after.
+  // Each spawned session's own Stop event re-invokes this whole script (hooks are
+  // repo-wide, not scoped to the top-level session), and if it read stale state
+  // (still phaseIndex/no-issues-left) it would re-enter this branch and recurse
+  // into another PR-creation + review pair indefinitely.
+  const completedPhase = phase;
+  counter.phaseIndex++;
+  counter.count = 0;
+  fs.writeFileSync(counterFile, JSON.stringify(counter));
+
+  runClaude(
+    `Создай PR из ветки ${completedPhase.branch} в master с названием 'feat: ${completedPhase.milestone}'.`,
+    { model: 'claude-opus-5', maxTurns: 10 },
+  );
 
   console.log('🔍 Ревью Opus 5...');
   runClaude(
     'Найди последний открытый PR и проведи детальное code review. Проверь архитектуру, безопасность, производительность и соответствие PRD. Оставь комментарии в PR через gh cli.',
     { model: 'claude-opus-5' },
   );
-
-  counter.phaseIndex++;
-  counter.count = 0;
-  fs.writeFileSync(counterFile, JSON.stringify(counter));
 
   const nextPhase = config.phases ? config.phases[counter.phaseIndex] : null;
   if (!nextPhase) {

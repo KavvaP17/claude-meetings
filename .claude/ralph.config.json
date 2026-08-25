@@ -1,12 +1,12 @@
 {
-  "active": true,
+  "active": false,
   "maxIterations": 10,
   "maxTurns": 500,
   "prompt": "Прочитай .claude/ralph.md и следуй правилам оттуда. Возьми следующую открытую Issue из milestone '{milestone}' и реализуй его в '{branch}'",
   "phases": [
     {
-      "milestone": "Фаза 2: Backend — обновление профиля (PATCH /users/me)",
-      "branch": "feature/phase-2-profile"
+      "milestone": "Фаза 3: Backend — загрузка аватара",
+      "branch": "feature/phase-3-profile"
     }
   ]
 }
