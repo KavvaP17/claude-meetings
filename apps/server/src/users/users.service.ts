@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { toUserProfileResponseDto, UserProfileResponseDto } from './dto/user-profile-response.dto';
 
 const PASSWORD_SALT_ROUNDS = 10;
@@ -31,5 +32,17 @@ export class UsersService {
       throw new NotFoundException(`User with id ${id} not found`);
     }
     return toUserProfileResponseDto(user);
+  }
+
+  async updateProfile(id: string, dto: UpdateUserProfileDto): Promise<UserProfileResponseDto> {
+    try {
+      const user = await this.prisma.user.update({ where: { id }, data: dto });
+      return toUserProfileResponseDto(user);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+      throw error;
+    }
   }
 }

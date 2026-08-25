@@ -56,4 +56,76 @@ describe('UsersService', () => {
       );
     });
   });
+
+  describe('updateProfile', () => {
+    it('updates the name and returns the profile DTO', async () => {
+      const email = `update-profile-name-${Date.now()}@example.com`;
+      const created = await service.create(email, 'password123');
+
+      const profile = await service.updateProfile(created.id, { name: 'New Name' });
+
+      expect(profile).toEqual({
+        id: created.id,
+        email,
+        name: 'New Name',
+        avatarUrl: null,
+        createdAt: created.createdAt,
+      });
+    });
+
+    it('updates the avatarUrl and returns the profile DTO', async () => {
+      const email = `update-profile-avatar-${Date.now()}@example.com`;
+      const created = await service.create(email, 'password123');
+
+      const profile = await service.updateProfile(created.id, { avatarUrl: '/avatars/pic.png' });
+
+      expect(profile).toEqual({
+        id: created.id,
+        email,
+        name: null,
+        avatarUrl: '/avatars/pic.png',
+        createdAt: created.createdAt,
+      });
+    });
+
+    it('updates both name and avatarUrl when both are given', async () => {
+      const email = `update-profile-both-${Date.now()}@example.com`;
+      const created = await service.create(email, 'password123');
+
+      const profile = await service.updateProfile(created.id, {
+        name: 'Both Name',
+        avatarUrl: '/avatars/both.png',
+      });
+
+      expect(profile).toEqual({
+        id: created.id,
+        email,
+        name: 'Both Name',
+        avatarUrl: '/avatars/both.png',
+        createdAt: created.createdAt,
+      });
+    });
+
+    it('leaves fields unchanged when they are omitted from the dto', async () => {
+      const email = `update-profile-partial-${Date.now()}@example.com`;
+      const created = await service.create(email, 'password123');
+      await service.updateProfile(created.id, { name: 'Kept Name' });
+
+      const profile = await service.updateProfile(created.id, { avatarUrl: '/avatars/kept.png' });
+
+      expect(profile).toEqual({
+        id: created.id,
+        email,
+        name: 'Kept Name',
+        avatarUrl: '/avatars/kept.png',
+        createdAt: created.createdAt,
+      });
+    });
+
+    it('throws NotFoundException when no user matches the id', async () => {
+      await expect(
+        service.updateProfile('00000000-0000-0000-0000-000000000000', { name: 'Nobody' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });
