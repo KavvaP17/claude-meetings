@@ -1,5 +1,9 @@
 import { ConfigService } from '@nestjs/config';
-import { getAllowedAvatarMimeTypes, getMaxAvatarSizeBytes } from './avatar.constants';
+import {
+  getAllowedAvatarExtensions,
+  getAllowedAvatarMimeTypes,
+  getMaxAvatarSizeBytes,
+} from './avatar.constants';
 
 function fakeConfigService(values: Record<string, string>): ConfigService {
   return { get: (key: string) => values[key] } as ConfigService;
@@ -13,6 +17,7 @@ describe('avatar.constants', () => {
       'image/png',
       'image/webp',
     ]);
+    expect(getAllowedAvatarExtensions(configService)).toEqual(['.jpg', '.jpeg', '.png', '.webp']);
     expect(getMaxAvatarSizeBytes(configService)).toBe(5 * 1024 * 1024);
   });
 
@@ -21,9 +26,11 @@ describe('avatar.constants', () => {
   it('applies overrides read from ConfigService', () => {
     const configService = fakeConfigService({
       ALLOWED_AVATAR_MIME_TYPES: 'image/gif',
+      ALLOWED_AVATAR_EXTENSIONS: '.gif',
       MAX_AVATAR_SIZE_BYTES: '1024',
     });
     expect(getAllowedAvatarMimeTypes(configService)).toEqual(['image/gif']);
+    expect(getAllowedAvatarExtensions(configService)).toEqual(['.gif']);
     expect(getMaxAvatarSizeBytes(configService)).toBe(1024);
   });
 });

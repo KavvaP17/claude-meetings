@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
@@ -16,10 +19,33 @@ function uniqueEmail(): string {
   return `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 }
 
+// `process.env.KEY = undefined` sets the literal string "undefined" (env values are always
+// strings), not an unset key — must delete instead when there was no previous value.
+function restoreEnv(key: string, previousValue: string | undefined): void {
+  if (previousValue === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = previousValue;
+  }
+}
+
 describe('Users (e2e)', () => {
   let app: INestApplication<App>;
   let email: string;
   let authHeader: string;
+  let storageDir: string;
+  let previousStorageDir: string | undefined;
+
+  beforeAll(() => {
+    previousStorageDir = process.env.STORAGE_DIR;
+    storageDir = mkdtempSync(join(tmpdir(), 'users-e2e-'));
+    process.env.STORAGE_DIR = storageDir;
+  });
+
+  afterAll(() => {
+    restoreEnv('STORAGE_DIR', previousStorageDir);
+    rmSync(storageDir, { recursive: true, force: true });
+  });
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -114,6 +140,29 @@ describe('Users (e2e)', () => {
 
     it('rejects a request with no Authorization header with 401', async () => {
       await request(app.getHttpServer()).patch('/users/me').send({ name: 'New Name' }).expect(401);
+    });
+  });
+
+  describe('POST /users/me/avatar', () => {
+    it('saves the uploaded avatar file to disk', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/avatar')
+        .set('Authorization', authHeader)
+        .attach('avatar', Buffer.from('fake image content'), {
+          filename: 'avatar.png',
+          contentType: 'image/png',
+        })
+        .expect(201);
+    });
+
+    it('rejects a request with no Authorization header with 401', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/avatar')
+        .attach('avatar', Buffer.from('fake image content'), {
+          filename: 'avatar.png',
+          contentType: 'image/png',
+        })
+        .expect(401);
     });
   });
 });

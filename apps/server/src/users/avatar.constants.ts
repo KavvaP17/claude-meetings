@@ -6,6 +6,8 @@ function parseList(value: string | undefined, defaults: string[]): string[] {
 
 const DEFAULT_ALLOWED_AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+const DEFAULT_ALLOWED_AVATAR_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+
 // 5 MB.
 const DEFAULT_MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -16,6 +18,13 @@ export function getAllowedAvatarMimeTypes(configService: ConfigService): string[
   return parseList(
     configService.get<string>('ALLOWED_AVATAR_MIME_TYPES'),
     DEFAULT_ALLOWED_AVATAR_MIME_TYPES,
+  );
+}
+
+export function getAllowedAvatarExtensions(configService: ConfigService): string[] {
+  return parseList(
+    configService.get<string>('ALLOWED_AVATAR_EXTENSIONS'),
+    DEFAULT_ALLOWED_AVATAR_EXTENSIONS,
   );
 }
 
