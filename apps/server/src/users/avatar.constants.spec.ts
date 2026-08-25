@@ -1,5 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import {
+  buildAvatarUrl,
+  extractAvatarStoragePath,
   getAllowedAvatarExtensions,
   getAllowedAvatarMimeTypes,
   getMaxAvatarSizeBytes,
@@ -32,5 +34,47 @@ describe('avatar.constants', () => {
     expect(getAllowedAvatarMimeTypes(configService)).toEqual(['image/gif']);
     expect(getAllowedAvatarExtensions(configService)).toEqual(['.gif']);
     expect(getMaxAvatarSizeBytes(configService)).toBe(1024);
+  });
+
+  describe('buildAvatarUrl', () => {
+    it('prefixes the stored file name with the uploads URL path', () => {
+      expect(buildAvatarUrl('a1b2c3.png')).toBe('/uploads/a1b2c3.png');
+    });
+  });
+
+  describe('extractAvatarStoragePath', () => {
+    const uuidFileName = '3fa85f64-5717-4562-b3fc-2c963f66afa6.png';
+
+    it('returns the stored file name for a URL built by buildAvatarUrl', () => {
+      expect(extractAvatarStoragePath(buildAvatarUrl(uuidFileName))).toBe(uuidFileName);
+    });
+
+    it('returns null for null', () => {
+      expect(extractAvatarStoragePath(null)).toBeNull();
+    });
+
+    it('returns null when the URL is missing the /uploads/ prefix', () => {
+      expect(extractAvatarStoragePath(`https://example.com/${uuidFileName}`)).toBeNull();
+    });
+
+    // Security boundary: extractAvatarStoragePath's result feeds FilesStorageService.delete(), and
+    // avatarUrl can be set to an arbitrary string via PATCH /users/me — a permissive extraction would
+    // let a crafted avatarUrl (e.g. containing `../`) make a later avatar upload delete an arbitrary file.
+    it('returns null for a path-traversal payload disguised as an uploads URL', () => {
+      expect(extractAvatarStoragePath('/uploads/../../etc/passwd')).toBeNull();
+    });
+
+    it('returns null for an arbitrary non-UUID file name', () => {
+      expect(extractAvatarStoragePath('/uploads/avatar.png')).toBeNull();
+    });
+
+    // Security boundary: a UUID-shaped path with a non-avatar extension (e.g. an .mp4 saved by
+    // MeetingFilesService under the same STORAGE_DIR) must not be treated as a deletable avatar file,
+    // even though it matches the UUID naming convention shared by both upload features.
+    it('returns null for a UUID file name with an extension avatars never use', () => {
+      expect(
+        extractAvatarStoragePath('/uploads/3fa85f64-5717-4562-b3fc-2c963f66afa6.mp4'),
+      ).toBeNull();
+    });
   });
 });

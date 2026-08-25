@@ -144,8 +144,8 @@ describe('Users (e2e)', () => {
   });
 
   describe('POST /users/me/avatar', () => {
-    it('saves the uploaded avatar file to disk', async () => {
-      await request(app.getHttpServer())
+    it('saves the uploaded avatar file and updates avatarUrl on the profile', async () => {
+      const response = await request(app.getHttpServer())
         .post('/users/me/avatar')
         .set('Authorization', authHeader)
         .attach('avatar', Buffer.from('fake image content'), {
@@ -153,6 +153,18 @@ describe('Users (e2e)', () => {
           contentType: 'image/png',
         })
         .expect(201);
+
+      const body = response.body as UserProfileResponseBody;
+      expect(body.email).toBe(email);
+      expect(typeof body.avatarUrl).toBe('string');
+      expect(body.avatarUrl).toMatch(/^\/uploads\/.+\.png$/);
+
+      const profileResponse = await request(app.getHttpServer())
+        .get('/users/me')
+        .set('Authorization', authHeader)
+        .expect(200);
+      const profileBody = profileResponse.body as UserProfileResponseBody;
+      expect(profileBody.avatarUrl).toBe(body.avatarUrl);
     });
 
     it('rejects a request with no Authorization header with 401', async () => {
