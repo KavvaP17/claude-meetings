@@ -176,5 +176,42 @@ describe('Users (e2e)', () => {
         })
         .expect(401);
     });
+
+    it('rejects a disallowed file format with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/avatar')
+        .set('Authorization', authHeader)
+        .attach('avatar', Buffer.from('not an image'), {
+          filename: 'malware.exe',
+          contentType: 'application/octet-stream',
+        })
+        .expect(400);
+    });
+  });
+
+  describe('POST /users/me/avatar - file size limit', () => {
+    let previousMaxAvatarSizeBytes: string | undefined;
+
+    beforeAll(() => {
+      previousMaxAvatarSizeBytes = process.env.MAX_AVATAR_SIZE_BYTES;
+      process.env.MAX_AVATAR_SIZE_BYTES = '1024';
+    });
+
+    afterAll(() => {
+      restoreEnv('MAX_AVATAR_SIZE_BYTES', previousMaxAvatarSizeBytes);
+    });
+
+    it('rejects a file exceeding the configured max size', async () => {
+      // multer's `limits.fileSize` (AvatarUploadInterceptor) rejects the stream before it's fully
+      // read — Nest maps that to 413 Payload Too Large, not 400 (mirrors meeting-files.e2e-spec.ts).
+      await request(app.getHttpServer())
+        .post('/users/me/avatar')
+        .set('Authorization', authHeader)
+        .attach('avatar', Buffer.alloc(2048), {
+          filename: 'oversized.png',
+          contentType: 'image/png',
+        })
+        .expect(413);
+    });
   });
 });
