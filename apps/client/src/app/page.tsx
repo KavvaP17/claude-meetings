@@ -1,9 +1,10 @@
 'use client';
 
-import { ApiError } from '@/lib/api/client';
+import { API_URL, ApiError } from '@/lib/api/client';
 import { getMeetings, type Meeting } from '@/lib/api/meetings';
+import { getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
-import { Button, Card, Spinner } from '@heroui/react';
+import { Avatar, Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ export default function Home() {
   const { session, logout } = useRequireSession();
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -29,6 +31,19 @@ export default function Home() {
           return;
         }
         setLoadError(error instanceof ApiError ? error.message : 'Failed to load meetings.');
+      });
+  }, [session, logout]);
+
+  useEffect(() => {
+    if (!session) return;
+    getCurrentUser(session.accessToken)
+      .then(setProfile)
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) {
+          logout();
+          return;
+        }
+        console.error('Failed to load profile.', error);
       });
   }, [session, logout]);
 
@@ -50,9 +65,21 @@ export default function Home() {
     <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-foreground">Welcome back</h1>
-            <p className="truncate text-muted">{session.email}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar size="md">
+              {profile?.avatarUrl ? (
+                <Avatar.Image src={`${API_URL}${profile.avatarUrl}`} alt="" />
+              ) : null}
+              <Avatar.Fallback>
+                {profile ? initialsFor(profile) : session.email.charAt(0).toUpperCase()}
+              </Avatar.Fallback>
+            </Avatar>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-foreground">Welcome back</h1>
+              <p className="truncate text-muted">
+                {profile?.name ?? profile?.email ?? session.email}
+              </p>
+            </div>
           </div>
           <Button variant="outline" onPress={logout}>
             Log out
