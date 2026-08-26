@@ -7,6 +7,7 @@ import {
   MAX_AVATAR_SIZE_BYTES,
 } from '@/lib/api/avatar-file-validation';
 import {
+  changePassword,
   getCurrentUser,
   initialsFor,
   updateProfile,
@@ -19,6 +20,7 @@ import {
   Avatar,
   Button,
   Card,
+  Description,
   FieldError,
   Form,
   Input,
@@ -53,6 +55,10 @@ export default function EditProfilePage() {
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSaved, setAvatarSaved] = useState(false);
+
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSaved, setPasswordSaved] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -152,8 +158,47 @@ export default function EditProfilePage() {
     }
   };
 
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!session) return;
+    setPasswordError(null);
+    setPasswordSaved(false);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const oldPassword = String(formData.get('oldPassword') ?? '');
+    const newPassword = String(formData.get('newPassword') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      await changePassword(session.accessToken, { oldPassword, newPassword });
+      setPasswordSaved(true);
+      form.reset();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        logout();
+        return;
+      }
+      setPasswordError(
+        error instanceof ApiError ? error.message : 'Something went wrong. Please try again.',
+      );
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
   if (!session) {
-    return null;
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Spinner aria-label="Checking session" size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -184,7 +229,15 @@ export default function EditProfilePage() {
               <Form onSubmit={handleNameSubmit}>
                 <Card.Content>
                   <div className="flex flex-col gap-4">
-                    <TextField defaultValue={profile.name ?? ''} name="name" type="text">
+                    <TextField
+                      isRequired
+                      defaultValue={profile.name ?? ''}
+                      name="name"
+                      type="text"
+                      validate={(value) =>
+                        value.trim() ? null : 'Name must not be empty or whitespace only'
+                      }
+                    >
                       <Label>Name</Label>
                       <Input className="min-h-11" placeholder="Jane Doe" variant="secondary" />
                       <FieldError />
@@ -299,6 +352,72 @@ export default function EditProfilePage() {
                   {isSavingAvatar ? 'Saving...' : 'Save avatar'}
                 </Button>
               </Card.Footer>
+            </Card>
+
+            <Card>
+              <Card.Header>
+                <Card.Title>Password</Card.Title>
+                <Card.Description>Change your account password</Card.Description>
+              </Card.Header>
+              <Form onSubmit={handlePasswordSubmit}>
+                <Card.Content>
+                  <div className="flex flex-col gap-4">
+                    <TextField
+                      isRequired
+                      autoComplete="current-password"
+                      name="oldPassword"
+                      type="password"
+                    >
+                      <Label>Current password</Label>
+                      <Input className="min-h-11" placeholder="••••••••" variant="secondary" />
+                      <FieldError />
+                    </TextField>
+
+                    <TextField
+                      isRequired
+                      autoComplete="new-password"
+                      minLength={8}
+                      name="newPassword"
+                      type="password"
+                      validate={(value) =>
+                        value.length >= 8 ? null : 'Password must be at least 8 characters'
+                      }
+                    >
+                      <Label>New password</Label>
+                      <Input className="min-h-11" placeholder="••••••••" variant="secondary" />
+                      <Description>Must be at least 8 characters</Description>
+                      <FieldError />
+                    </TextField>
+
+                    <TextField
+                      isRequired
+                      autoComplete="new-password"
+                      name="confirmPassword"
+                      type="password"
+                    >
+                      <Label>Confirm new password</Label>
+                      <Input className="min-h-11" placeholder="••••••••" variant="secondary" />
+                      <FieldError />
+                    </TextField>
+
+                    {passwordError ? (
+                      <p className="text-sm text-danger" role="alert">
+                        {passwordError}
+                      </p>
+                    ) : null}
+                    {passwordSaved ? (
+                      <p className="text-sm text-success" role="status">
+                        Password changed.
+                      </p>
+                    ) : null}
+                  </div>
+                </Card.Content>
+                <Card.Footer>
+                  <Button className="w-full" isPending={isSavingPassword} type="submit">
+                    {isSavingPassword ? 'Saving...' : 'Change password'}
+                  </Button>
+                </Card.Footer>
+              </Form>
             </Card>
           </>
         )}
