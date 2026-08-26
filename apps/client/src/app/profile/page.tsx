@@ -1,6 +1,6 @@
 'use client';
 
-import { ApiError } from '@/lib/api/client';
+import { API_URL, ApiError } from '@/lib/api/client';
 import { getCurrentUser, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
 import { Avatar, Card, Spinner } from '@heroui/react';
@@ -12,7 +12,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 function initialsFor(profile: UserProfile): string {
-  const source = profile.name ?? profile.email;
+  const source = profile.name?.trim() || profile.email;
   return source.charAt(0).toUpperCase();
 }
 
@@ -57,7 +57,9 @@ export default function ProfilePage() {
           <Card>
             <Card.Header className="flex-row items-center gap-4">
               <Avatar size="lg">
-                {profile.avatarUrl ? <Avatar.Image src={profile.avatarUrl} alt="" /> : null}
+                {profile.avatarUrl ? (
+                  <Avatar.Image src={`${API_URL}${profile.avatarUrl}`} alt="" />
+                ) : null}
                 <Avatar.Fallback>{initialsFor(profile)}</Avatar.Fallback>
               </Avatar>
               <div>
