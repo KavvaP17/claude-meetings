@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Patch,
   Post,
   Req,
@@ -13,6 +14,7 @@ import type { AuthenticatedRequest } from '../auth/guards/jwt-auth.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AvatarFileValidationPipe } from './avatar-file-validation.pipe';
 import { AvatarUploadInterceptor } from './avatar-upload.interceptor';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 import { UsersService } from './users.service';
@@ -42,5 +44,11 @@ export class UsersController {
     @UploadedFile(AvatarFileValidationPipe) file: Express.Multer.File,
   ): Promise<UserProfileResponseDto> {
     return this.usersService.updateAvatar(req.user.sub, file);
+  }
+
+  @Post('me/change-password')
+  @HttpCode(200)
+  changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto): Promise<void> {
+    return this.usersService.changePassword(req.user.sub, dto.oldPassword, dto.newPassword);
   }
 }
