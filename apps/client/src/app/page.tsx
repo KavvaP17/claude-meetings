@@ -36,15 +36,34 @@ export default function Home() {
 
   useEffect(() => {
     if (!session) return;
-    getCurrentUser(session.accessToken)
-      .then(setProfile)
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 401) {
-          logout();
-          return;
-        }
-        console.error('Failed to load profile.', error);
-      });
+
+    const loadProfile = () => {
+      getCurrentUser(session.accessToken)
+        .then(setProfile)
+        .catch((error: unknown) => {
+          if (error instanceof ApiError && error.status === 401) {
+            logout();
+            return;
+          }
+          console.error('Failed to load profile.', error);
+        });
+    };
+
+    loadProfile();
+
+    // There's no in-app link back to "/" from /profile or /profile/edit, so the browser's
+    // Back button is the only way to return here. Next.js's client-side router cache can
+    // restore this page's previous instance on that back navigation without re-running this
+    // effect, which would otherwise leave the header showing the pre-edit profile. The JWT
+    // itself never changes, so `session` can't be used to detect that an edit happened —
+    // popstate is what actually signals "the user navigated back to /".
+    const handlePopState = () => {
+      if (window.location.pathname === '/') {
+        loadProfile();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [session, logout]);
 
   if (!session) {
