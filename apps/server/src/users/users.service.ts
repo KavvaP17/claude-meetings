@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { FilesStorageService } from '../files/files-storage.service';
@@ -25,10 +25,14 @@ export class UsersService {
   }
 
   async create(email: string, password: string): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+    const hashedPassword = await this.hashPassword(password);
     return this.prisma.user.create({
       data: { email, password: hashedPassword },
     });
+  }
+
+  private hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
   }
 
   async getProfile(id: string): Promise<UserProfileResponseDto> {
@@ -80,5 +84,27 @@ export class UsersService {
     }
 
     return toUserProfileResponseDto(updatedUser);
+  }
+
+  async changePassword(id: string, oldPassword: string, newPassword: string): Promise<void> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    const hashedPassword = await this.hashPassword(newPassword);
+    try {
+      await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+      throw error;
+    }
   }
 }
