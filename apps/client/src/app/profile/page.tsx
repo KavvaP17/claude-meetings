@@ -3,7 +3,8 @@
 import { API_URL, ApiError } from '@/lib/api/client';
 import { getCurrentUser, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
-import { Avatar, Card, Spinner } from '@heroui/react';
+import { Avatar, Button, Card, Spinner } from '@heroui/react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -17,6 +18,7 @@ function initialsFor(profile: UserProfile): string {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { session, logout } = useRequireSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -72,6 +74,15 @@ export default function ProfilePage() {
                 Member since {dateFormatter.format(new Date(profile.createdAt))}
               </p>
             </Card.Content>
+            <Card.Footer>
+              <Button
+                className="w-full"
+                onPress={() => router.push('/profile/edit')}
+                variant="outline"
+              >
+                Edit profile
+              </Button>
+            </Card.Footer>
           </Card>
         )}
       </div>
