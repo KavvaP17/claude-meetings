@@ -214,4 +214,51 @@ describe('Users (e2e)', () => {
         .expect(413);
     });
   });
+
+  describe('POST /users/me/change-password', () => {
+    it('changes the password when the old password is correct', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', authHeader)
+        .send({ oldPassword: 'Password123!', newPassword: 'NewPassword456!' })
+        .expect(200);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password: 'NewPassword456!' })
+        .expect(200);
+      expect((loginResponse.body as AuthResponseBody).accessToken).toEqual(expect.any(String));
+    });
+
+    it('rejects an incorrect old password with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', authHeader)
+        .send({ oldPassword: 'WrongPassword!', newPassword: 'NewPassword456!' })
+        .expect(400);
+    });
+
+    it('rejects a new password that does not meet the policy with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', authHeader)
+        .send({ oldPassword: 'Password123!', newPassword: 'short' })
+        .expect(400);
+    });
+
+    it('rejects a new password that matches the old password with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', authHeader)
+        .send({ oldPassword: 'Password123!', newPassword: 'Password123!' })
+        .expect(400);
+    });
+
+    it('rejects a request with no Authorization header with 401', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .send({ oldPassword: 'Password123!', newPassword: 'NewPassword456!' })
+        .expect(401);
+    });
+  });
 });

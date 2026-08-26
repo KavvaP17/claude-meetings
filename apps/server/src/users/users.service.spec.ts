@@ -1,4 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { FilesStorageService } from '../files/files-storage.service';
 import { buildAvatarUrl } from './avatar.constants';
@@ -227,6 +229,64 @@ describe('UsersService', () => {
       expect(filesStorageService.deletedPaths).toEqual([
         '55555555-5555-5555-5555-555555555555.png',
       ]);
+    });
+  });
+
+  describe('changePassword', () => {
+    it('updates the password when oldPassword matches the stored hash', async () => {
+      const email = `change-password-ok-${Date.now()}@example.com`;
+      const created = await service.create(email, 'oldpass123');
+
+      await service.changePassword(created.id, 'oldpass123', 'newpass123');
+
+      const updated = await service.findById(created.id);
+      expect(updated?.password).not.toBe(created.password);
+      await expect(bcrypt.compare('newpass123', updated!.password)).resolves.toBe(true);
+    });
+
+    it('throws BadRequestException when oldPassword does not match the stored hash', async () => {
+      const email = `change-password-mismatch-${Date.now()}@example.com`;
+      const created = await service.create(email, 'oldpass123');
+
+      await expect(service.changePassword(created.id, 'wrongpass', 'newpass123')).rejects.toThrow(
+        BadRequestException,
+      );
+
+      const unchanged = await service.findById(created.id);
+      expect(unchanged?.password).toBe(created.password);
+    });
+
+    it('throws BadRequestException when newPassword is the same as oldPassword', async () => {
+      const email = `change-password-same-${Date.now()}@example.com`;
+      const created = await service.create(email, 'oldpass123');
+
+      await expect(service.changePassword(created.id, 'oldpass123', 'oldpass123')).rejects.toThrow(
+        BadRequestException,
+      );
+
+      const unchanged = await service.findById(created.id);
+      expect(unchanged?.password).toBe(created.password);
+    });
+
+    it('throws NotFoundException when no user matches the id', async () => {
+      await expect(
+        service.changePassword('00000000-0000-0000-0000-000000000000', 'oldpass123', 'newpass123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when the user is deleted between the lookup and the update', async () => {
+      const email = `change-password-race-${Date.now()}@example.com`;
+      const created = await service.create(email, 'oldpass123');
+      jest.spyOn(prisma.user, 'update').mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '6.0.0',
+        }),
+      );
+
+      await expect(service.changePassword(created.id, 'oldpass123', 'newpass123')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
