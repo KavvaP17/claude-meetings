@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, authHeaders } from './client';
 
 export interface UserProfile {
   id: string;
@@ -6,10 +6,6 @@ export interface UserProfile {
   name: string | null;
   avatarUrl: string | null;
   createdAt: string;
-}
-
-function authHeaders(accessToken: string): HeadersInit {
-  return { Authorization: `Bearer ${accessToken}` };
 }
 
 export function getCurrentUser(accessToken: string): Promise<UserProfile> {

@@ -1,4 +1,4 @@
-import { API_URL, apiFetch, ApiError, extractErrorMessage } from './client';
+import { API_URL, apiFetch, ApiError, authHeaders, extractErrorMessage } from './client';
 
 export interface Meeting {
   id: string;
@@ -27,10 +27,6 @@ export interface CreateMeetingPayload {
   title: string;
   date: string;
   participants: string[];
-}
-
-function authHeaders(accessToken: string): HeadersInit {
-  return { Authorization: `Bearer ${accessToken}` };
 }
 
 export function getMeetings(accessToken: string): Promise<Meeting[]> {

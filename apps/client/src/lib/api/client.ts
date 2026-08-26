@@ -10,6 +10,10 @@ export class ApiError extends Error {
   }
 }
 
+export function authHeaders(accessToken: string): HeadersInit {
+  return { Authorization: `Bearer ${accessToken}` };
+}
+
 export function extractErrorMessage(body: unknown, fallback: string): string {
   if (body && typeof body === 'object' && 'message' in body) {
     const { message } = body as { message: unknown };
