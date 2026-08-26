@@ -29,6 +29,13 @@ describe('ChangePasswordDto', () => {
     expect(errors[0].property).toBe('oldPassword');
   });
 
+  it('fails validation when oldPassword is empty', async () => {
+    const errors = await validateDto({ oldPassword: '', newPassword: 'newpass123' });
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].property).toBe('oldPassword');
+  });
+
   it('passes validation when oldPassword is shorter than 8 characters', async () => {
     const errors = await validateDto({ oldPassword: 'short', newPassword: 'newpass123' });
 

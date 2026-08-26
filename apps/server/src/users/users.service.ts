@@ -97,6 +97,10 @@ export class UsersService {
       throw new BadRequestException('Old password is incorrect');
     }
 
+    if (newPassword === oldPassword) {
+      throw new BadRequestException('New password must be different from the old password');
+    }
+
     const hashedPassword = await this.hashPassword(newPassword);
     try {
       await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });

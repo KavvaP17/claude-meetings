@@ -246,6 +246,14 @@ describe('Users (e2e)', () => {
         .expect(400);
     });
 
+    it('rejects a new password that matches the old password with 400', async () => {
+      await request(app.getHttpServer())
+        .post('/users/me/change-password')
+        .set('Authorization', authHeader)
+        .send({ oldPassword: 'Password123!', newPassword: 'Password123!' })
+        .expect(400);
+    });
+
     it('rejects a request with no Authorization header with 401', async () => {
       await request(app.getHttpServer())
         .post('/users/me/change-password')

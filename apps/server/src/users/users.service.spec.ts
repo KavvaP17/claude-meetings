@@ -256,6 +256,18 @@ describe('UsersService', () => {
       expect(unchanged?.password).toBe(created.password);
     });
 
+    it('throws BadRequestException when newPassword is the same as oldPassword', async () => {
+      const email = `change-password-same-${Date.now()}@example.com`;
+      const created = await service.create(email, 'oldpass123');
+
+      await expect(service.changePassword(created.id, 'oldpass123', 'oldpass123')).rejects.toThrow(
+        BadRequestException,
+      );
+
+      const unchanged = await service.findById(created.id);
+      expect(unchanged?.password).toBe(created.password);
+    });
+
     it('throws NotFoundException when no user matches the id', async () => {
       await expect(
         service.changePassword('00000000-0000-0000-0000-000000000000', 'oldpass123', 'newpass123'),
