@@ -65,7 +65,10 @@ export default function Home() {
     <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
+          <Link
+            className="-mx-2 -my-1 flex min-w-0 items-center gap-3 rounded-lg px-2 py-1 hover:bg-muted/10 focus-visible:status-focused"
+            href="/profile"
+          >
             <Avatar size="md">
               {profile?.avatarUrl ? (
                 <Avatar.Image src={`${API_URL}${profile.avatarUrl}`} alt="" />
@@ -80,7 +83,7 @@ export default function Home() {
                 {profile?.name ?? profile?.email ?? session.email}
               </p>
             </div>
-          </div>
+          </Link>
           <Button variant="outline" onPress={logout}>
             Log out
           </Button>
