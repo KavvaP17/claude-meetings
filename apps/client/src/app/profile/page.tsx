@@ -1,7 +1,7 @@
 'use client';
 
 import { API_URL, ApiError } from '@/lib/api/client';
-import { getCurrentUser, type UserProfile } from '@/lib/api/users';
+import { getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
 import { Avatar, Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
@@ -11,11 +11,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
-
-function initialsFor(profile: UserProfile): string {
-  const source = profile.name?.trim() || profile.email;
-  return source.charAt(0).toUpperCase();
-}
 
 export default function ProfilePage() {
   const router = useRouter();

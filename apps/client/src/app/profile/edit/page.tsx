@@ -6,7 +6,13 @@ import {
   ALLOWED_AVATAR_MIME_TYPES,
   MAX_AVATAR_SIZE_BYTES,
 } from '@/lib/api/avatar-file-validation';
-import { getCurrentUser, updateProfile, uploadAvatar, type UserProfile } from '@/lib/api/users';
+import {
+  getCurrentUser,
+  initialsFor,
+  updateProfile,
+  uploadAvatar,
+  type UserProfile,
+} from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
 import { formatFileSize } from '@/lib/format';
 import {
@@ -29,11 +35,6 @@ import {
   type DragEvent,
   type FormEvent,
 } from 'react';
-
-function initialsFor(profile: UserProfile): string {
-  const source = profile.name?.trim() || profile.email;
-  return source.charAt(0).toUpperCase();
-}
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -228,22 +229,33 @@ export default function EditProfilePage() {
                   />
                   <div
                     className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
-                      isDraggingAvatar
-                        ? 'border-accent bg-accent/5'
-                        : 'border-border hover:border-accent'
+                      isSavingAvatar
+                        ? 'cursor-not-allowed border-border opacity-60'
+                        : isDraggingAvatar
+                          ? 'border-accent bg-accent/5'
+                          : 'border-border hover:border-accent'
                     }`}
+                    aria-disabled={isSavingAvatar}
                     aria-label="Choose or drop an avatar image"
                     role="button"
-                    tabIndex={0}
-                    onClick={() => avatarInputRef.current?.click()}
+                    tabIndex={isSavingAvatar ? -1 : 0}
+                    onClick={() => {
+                      if (!isSavingAvatar) avatarInputRef.current?.click();
+                    }}
                     onDragOver={(event) => {
                       event.preventDefault();
-                      setIsDraggingAvatar(true);
+                      if (!isSavingAvatar) setIsDraggingAvatar(true);
                     }}
                     onDragLeave={() => setIsDraggingAvatar(false)}
-                    onDrop={handleAvatarDrop}
+                    onDrop={(event) => {
+                      if (isSavingAvatar) {
+                        event.preventDefault();
+                        return;
+                      }
+                      handleAvatarDrop(event);
+                    }}
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
+                      if (!isSavingAvatar && (event.key === 'Enter' || event.key === ' ')) {
                         event.preventDefault();
                         avatarInputRef.current?.click();
                       }

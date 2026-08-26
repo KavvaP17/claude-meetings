@@ -18,6 +18,13 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+// Array.from (not .charAt(0)) so a name/email starting with an astral-plane character (most
+// emoji) yields the full code point instead of a lone UTF-16 surrogate half.
+export function initialsFor(profile: UserProfile): string {
+  const source = profile.name?.trim() || profile.email;
+  return Array.from(source)[0]?.toUpperCase() ?? '';
+}
+
 export function getCurrentUser(accessToken: string): Promise<UserProfile> {
   return apiFetch<UserProfile>(
     '/users/me',
