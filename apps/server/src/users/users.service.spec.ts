@@ -102,45 +102,19 @@ describe('UsersService', () => {
       });
     });
 
-    it('updates the avatarUrl and returns the profile DTO', async () => {
-      const email = `update-profile-avatar-${Date.now()}@example.com`;
-      const created = await service.create(email, 'password123');
-
-      const profile = await service.updateProfile(created.id, { avatarUrl: '/avatars/pic.png' });
-
-      expect(profile).toEqual({
-        id: created.id,
-        email,
-        name: null,
-        avatarUrl: '/avatars/pic.png',
-        createdAt: created.createdAt,
-      });
-    });
-
-    it('updates both name and avatarUrl when both are given', async () => {
-      const email = `update-profile-both-${Date.now()}@example.com`;
-      const created = await service.create(email, 'password123');
-
-      const profile = await service.updateProfile(created.id, {
-        name: 'Both Name',
-        avatarUrl: '/avatars/both.png',
-      });
-
-      expect(profile).toEqual({
-        id: created.id,
-        email,
-        name: 'Both Name',
-        avatarUrl: '/avatars/both.png',
-        createdAt: created.createdAt,
-      });
-    });
-
-    it('leaves fields unchanged when they are omitted from the dto', async () => {
+    // avatarUrl is intentionally not settable through updateProfile/UpdateUserProfileDto (see
+    // update-user-profile.dto.ts) — it's only ever written server-side via updateAvatar. These
+    // tests seed avatarUrl directly through Prisma rather than through the service, to confirm
+    // updateProfile leaves it untouched when only name is given.
+    it('leaves an existing avatarUrl unchanged when only name is given', async () => {
       const email = `update-profile-partial-${Date.now()}@example.com`;
       const created = await service.create(email, 'password123');
-      await service.updateProfile(created.id, { name: 'Kept Name' });
+      await prisma.user.update({
+        where: { id: created.id },
+        data: { avatarUrl: '/avatars/kept.png' },
+      });
 
-      const profile = await service.updateProfile(created.id, { avatarUrl: '/avatars/kept.png' });
+      const profile = await service.updateProfile(created.id, { name: 'Kept Name' });
 
       expect(profile).toEqual({
         id: created.id,
@@ -176,7 +150,10 @@ describe('UsersService', () => {
       const email = `update-avatar-replace-${Date.now()}@example.com`;
       const created = await service.create(email, 'password123');
       const previousFileName = '11111111-1111-1111-1111-111111111111.png';
-      await service.updateProfile(created.id, { avatarUrl: buildAvatarUrl(previousFileName) });
+      await prisma.user.update({
+        where: { id: created.id },
+        data: { avatarUrl: buildAvatarUrl(previousFileName) },
+      });
 
       const profile = await service.updateAvatar(
         created.id,
@@ -190,7 +167,10 @@ describe('UsersService', () => {
     it('does not attempt to delete the previous avatar when it is not a recognized storage path', async () => {
       const email = `update-avatar-unrecognized-${Date.now()}@example.com`;
       const created = await service.create(email, 'password123');
-      await service.updateProfile(created.id, { avatarUrl: '/uploads/not-a-uuid.png' });
+      await prisma.user.update({
+        where: { id: created.id },
+        data: { avatarUrl: '/uploads/not-a-uuid.png' },
+      });
 
       await service.updateAvatar(
         created.id,
