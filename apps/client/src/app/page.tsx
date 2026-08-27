@@ -2,8 +2,9 @@
 
 import { ApiError } from '@/lib/api/client';
 import { getMeetings, type Meeting } from '@/lib/api/meetings';
+import { avatarSrcFor, getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
-import { Button, Card, Spinner } from '@heroui/react';
+import { Avatar, Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ export default function Home() {
   const { session, logout } = useRequireSession();
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -32,6 +34,19 @@ export default function Home() {
       });
   }, [session, logout]);
 
+  useEffect(() => {
+    if (!session) return;
+    getCurrentUser(session.accessToken)
+      .then(setProfile)
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) {
+          logout();
+          return;
+        }
+        console.error('Failed to load profile.', error);
+      });
+  }, [session, logout]);
+
   if (!session) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -39,6 +54,8 @@ export default function Home() {
       </div>
     );
   }
+
+  const avatarSrc = profile ? avatarSrcFor(profile) : null;
 
   const recentMeetings = meetings
     ? [...meetings]
@@ -50,9 +67,22 @@ export default function Home() {
     <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col">
             <h1 className="text-2xl font-semibold text-foreground">Welcome back</h1>
-            <p className="truncate text-muted">{session.email}</p>
+            <Link
+              className="-mx-2 -my-1 flex min-w-0 items-center gap-3 rounded-lg px-2 py-1 hover:bg-muted/10 focus-visible:status-focused"
+              href="/profile"
+            >
+              <Avatar size="md">
+                {avatarSrc ? <Avatar.Image src={avatarSrc} alt="" /> : null}
+                <Avatar.Fallback>
+                  {initialsFor(profile ?? { name: null, email: session.email })}
+                </Avatar.Fallback>
+              </Avatar>
+              <p className="truncate text-muted">
+                {profile?.name ?? profile?.email ?? session.email}
+              </p>
+            </Link>
           </div>
           <Button variant="outline" onPress={logout}>
             Log out

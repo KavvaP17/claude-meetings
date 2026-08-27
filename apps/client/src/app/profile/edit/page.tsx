@@ -1,12 +1,13 @@
 'use client';
 
-import { API_URL, ApiError } from '@/lib/api/client';
+import { ApiError } from '@/lib/api/client';
 import {
   validateAvatarFile,
   ALLOWED_AVATAR_MIME_TYPES,
   MAX_AVATAR_SIZE_BYTES,
 } from '@/lib/api/avatar-file-validation';
 import {
+  avatarSrcFor,
   changePassword,
   getCurrentUser,
   initialsFor,
@@ -201,6 +202,8 @@ export default function EditProfilePage() {
     );
   }
 
+  const avatarSrc = profile ? avatarSrcFor(profile) : null;
+
   return (
     <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
       <div className="flex w-full max-w-md flex-col gap-6">
@@ -317,8 +320,8 @@ export default function EditProfilePage() {
                     <Avatar size="lg">
                       {avatarPreviewUrl ? (
                         <Avatar.Image src={avatarPreviewUrl} alt="" />
-                      ) : profile.avatarUrl ? (
-                        <Avatar.Image src={`${API_URL}${profile.avatarUrl}`} alt="" />
+                      ) : avatarSrc ? (
+                        <Avatar.Image src={avatarSrc} alt="" />
                       ) : null}
                       <Avatar.Fallback>{initialsFor(profile)}</Avatar.Fallback>
                     </Avatar>

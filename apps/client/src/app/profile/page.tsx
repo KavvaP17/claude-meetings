@@ -1,7 +1,7 @@
 'use client';
 
-import { API_URL, ApiError } from '@/lib/api/client';
-import { getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
+import { ApiError } from '@/lib/api/client';
+import { avatarSrcFor, getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
 import { Avatar, Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
@@ -31,6 +31,8 @@ export default function ProfilePage() {
       });
   }, [session, logout]);
 
+  const avatarSrc = profile ? avatarSrcFor(profile) : null;
+
   if (!session) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -54,9 +56,7 @@ export default function ProfilePage() {
           <Card>
             <Card.Header className="flex-row items-center gap-4">
               <Avatar size="lg">
-                {profile.avatarUrl ? (
-                  <Avatar.Image src={`${API_URL}${profile.avatarUrl}`} alt="" />
-                ) : null}
+                {avatarSrc ? <Avatar.Image src={avatarSrc} alt="" /> : null}
                 <Avatar.Fallback>{initialsFor(profile)}</Avatar.Fallback>
               </Avatar>
               <div>
