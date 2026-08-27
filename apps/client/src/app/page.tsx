@@ -37,10 +37,20 @@ export default function Home() {
   useEffect(() => {
     if (!session) return;
 
+    // Back/forward navigation can fire loadProfile() again before an earlier call's
+    // response lands. Track the latest call so a slower, stale response can't overwrite
+    // the freshly-fetched profile it raced against.
+    let latestRequestId = 0;
+
     const loadProfile = () => {
+      const requestId = ++latestRequestId;
       getCurrentUser(session.accessToken)
-        .then(setProfile)
+        .then((data) => {
+          if (requestId !== latestRequestId) return;
+          setProfile(data);
+        })
         .catch((error: unknown) => {
+          if (requestId !== latestRequestId) return;
           if (error instanceof ApiError && error.status === 401) {
             logout();
             return;
