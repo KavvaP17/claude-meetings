@@ -57,9 +57,10 @@ describe('avatar.constants', () => {
       expect(extractAvatarStoragePath(`https://example.com/${uuidFileName}`)).toBeNull();
     });
 
-    // Security boundary: extractAvatarStoragePath's result feeds FilesStorageService.delete(), and
-    // avatarUrl can be set to an arbitrary string via PATCH /users/me — a permissive extraction would
-    // let a crafted avatarUrl (e.g. containing `../`) make a later avatar upload delete an arbitrary file.
+    // Security boundary: extractAvatarStoragePath's result feeds FilesStorageService.delete(), so a
+    // permissive extraction would let a crafted avatarUrl (e.g. containing `../`) make a later avatar
+    // upload delete an arbitrary file — defense-in-depth against any path that might write a bad
+    // avatarUrl onto the User row (avatarUrl is no longer settable via PATCH /users/me at all).
     it('returns null for a path-traversal payload disguised as an uploads URL', () => {
       expect(extractAvatarStoragePath('/uploads/../../etc/passwd')).toBeNull();
     });
