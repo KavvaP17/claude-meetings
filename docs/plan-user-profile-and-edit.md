@@ -113,7 +113,7 @@
 **Задачи**:
 
 - [] Прогнать `pnpm test:e2e` в `apps/server` — все новые эндпоинты (`GET /users/me`, `PATCH /users/me`, `POST /users/me/avatar`, `POST /users/me/change-password`) покрыты успешным путём и ошибками валидации
-- [] Прогнать `pnpm typecheck` (или `tsc --noEmit`, если отдельного скрипта нет) в обоих приложениях без ошибок
+- [x] Прогнать `pnpm typecheck` (или `tsc --noEmit`, если отдельного скрипта нет) в обоих приложениях без ошибок
 - [] Ручная проверка в браузере (`pnpm dev`): просмотр `/profile`, независимое сохранение имени/аватара/пароля на `/profile/edit`, обновление шапки без перезагрузки
 - [] Обновить `apps/server/CLAUDE.md` (модуль `UsersController`, новые эндпоинты, поля `User`) и `apps/client/CLAUDE.md` (страницы `/profile`, `/profile/edit`, изменения шапки)
 
