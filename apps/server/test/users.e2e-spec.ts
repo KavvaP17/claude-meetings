@@ -110,16 +110,16 @@ describe('Users (e2e)', () => {
       expect(body.name).toBe('New Name');
     });
 
-    it('updates the authenticated user avatarUrl and returns the updated profile', async () => {
+    it('ignores a client-supplied avatarUrl (stripped by the global whitelist, not part of the DTO)', async () => {
       const response = await request(app.getHttpServer())
         .patch('/users/me')
         .set('Authorization', authHeader)
-        .send({ avatarUrl: '/uploads/avatar.png' })
+        .send({ avatarUrl: '@evil.example/x.png' })
         .expect(200);
 
       const body = response.body as UserProfileResponseBody;
       expect(body.email).toBe(email);
-      expect(body.avatarUrl).toBe('/uploads/avatar.png');
+      expect(body.avatarUrl).toBeNull();
     });
 
     it('rejects an empty-string name with 400', async () => {
@@ -127,14 +127,6 @@ describe('Users (e2e)', () => {
         .patch('/users/me')
         .set('Authorization', authHeader)
         .send({ name: '' })
-        .expect(400);
-    });
-
-    it('rejects a non-string avatarUrl with 400', async () => {
-      await request(app.getHttpServer())
-        .patch('/users/me')
-        .set('Authorization', authHeader)
-        .send({ avatarUrl: 123 })
         .expect(400);
     });
 

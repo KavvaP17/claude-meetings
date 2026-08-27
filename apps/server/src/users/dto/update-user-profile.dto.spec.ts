@@ -21,18 +21,6 @@ describe('UpdateUserProfileDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('passes validation with only avatarUrl set', async () => {
-    const errors = await validateDto({ avatarUrl: '/uploads/avatar.png' });
-
-    expect(errors).toHaveLength(0);
-  });
-
-  it('passes validation with both fields set', async () => {
-    const errors = await validateDto({ name: 'Alice', avatarUrl: '/uploads/avatar.png' });
-
-    expect(errors).toHaveLength(0);
-  });
-
   it('fails validation when name is not a string', async () => {
     const errors = await validateDto({ name: 123 });
 
@@ -61,10 +49,11 @@ describe('UpdateUserProfileDto', () => {
     expect(errors[0].property).toBe('name');
   });
 
-  it('fails validation when avatarUrl is not a string', async () => {
-    const errors = await validateDto({ avatarUrl: 123 });
+  it('passes validation when an avatarUrl field is supplied (not part of this DTO)', async () => {
+    // avatarUrl is deliberately not a field on this DTO (see update-user-profile.dto.ts) — the
+    // global ValidationPipe's `whitelist: true` strips it before it ever reaches the controller.
+    const errors = await validateDto({ avatarUrl: '@evil.example/x.png' });
 
-    expect(errors).toHaveLength(1);
-    expect(errors[0].property).toBe('avatarUrl');
+    expect(errors).toHaveLength(0);
   });
 });

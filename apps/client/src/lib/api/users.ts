@@ -10,7 +10,6 @@ export interface UserProfile {
 
 export interface UpdateProfilePayload {
   name?: string;
-  avatarUrl?: string;
 }
 
 export interface ChangePasswordPayload {

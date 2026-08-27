@@ -43,12 +43,14 @@ export function buildAvatarUrl(storagePath: string): string {
 
 // AvatarUploadInterceptor always names files `${randomUUID()}${ext}`, where ext is one of
 // DEFAULT_ALLOWED_AVATAR_EXTENSIONS — matching that shape strictly (rather than just stripping the
-// prefix, or accepting any extension) is a security boundary, not cosmetics: avatarUrl can also be set
-// to an arbitrary string via PATCH /users/me, and the result of this function is later passed to
-// FilesStorageService.delete(), which joins it onto STORAGE_DIR — an unvalidated value (e.g. containing
-// `../`, or a non-avatar extension like `.mp4` pointing at an unrelated file saved under the same
-// STORAGE_DIR by MeetingFilesService) would let a client-supplied avatarUrl direct a later avatar
-// upload to delete an arbitrary file.
+// prefix, or accepting any extension) is a security boundary, not cosmetics: the result of this
+// function is later passed to FilesStorageService.delete(), which joins it onto STORAGE_DIR — an
+// unvalidated value (e.g. containing `../`, or a non-avatar extension like `.mp4` pointing at an
+// unrelated file saved under the same STORAGE_DIR by MeetingFilesService) would let a bogus
+// avatarUrl direct a later avatar upload to delete an arbitrary file. avatarUrl can no longer be
+// set to an arbitrary string via PATCH /users/me (it was removed from UpdateUserProfileDto — see
+// dto/update-user-profile.dto.ts), but this check stays as defense-in-depth against any other
+// future path that might write a bad avatarUrl onto the User row.
 const STORED_AVATAR_EXTENSION_PATTERN = DEFAULT_ALLOWED_AVATAR_EXTENSIONS.map((ext) =>
   ext.slice(1),
 ).join('|');
