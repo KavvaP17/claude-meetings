@@ -1,4 +1,4 @@
-import { apiFetch, authHeaders } from './client';
+import { API_URL, apiFetch, authHeaders } from './client';
 
 export interface UserProfile {
   id: string;
@@ -20,9 +20,15 @@ export interface ChangePasswordPayload {
 
 // Array.from (not .charAt(0)) so a name/email starting with an astral-plane character (most
 // emoji) yields the full code point instead of a lone UTF-16 surrogate half.
-export function initialsFor(profile: UserProfile): string {
+export function initialsFor(profile: Pick<UserProfile, 'name' | 'email'>): string {
   const source = profile.name?.trim() || profile.email;
   return Array.from(source)[0]?.toUpperCase() ?? '';
+}
+
+// avatarUrl is a path relative to the API origin, not the client's — every page rendering an
+// avatar needs to resolve it against API_URL before handing it to <Avatar.Image>.
+export function avatarSrcFor(profile: Pick<UserProfile, 'avatarUrl'>): string | null {
+  return profile.avatarUrl ? `${API_URL}${profile.avatarUrl}` : null;
 }
 
 export function getCurrentUser(accessToken: string): Promise<UserProfile> {
