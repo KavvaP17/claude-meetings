@@ -2,8 +2,9 @@
 
 import { ApiError } from '@/lib/api/client';
 import { getMeetings, type Meeting } from '@/lib/api/meetings';
-import { avatarSrcFor, getCurrentUser, initialsFor, type UserProfile } from '@/lib/api/users';
+import { avatarSrcFor, initialsFor } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { Avatar, Button, Card, Spinner } from '@heroui/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export default function Home() {
   const { session, logout } = useRequireSession();
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { profile } = useProfile(session, logout);
 
   useEffect(() => {
     if (!session) return;
@@ -31,19 +32,6 @@ export default function Home() {
           return;
         }
         setLoadError(error instanceof ApiError ? error.message : 'Failed to load meetings.');
-      });
-  }, [session, logout]);
-
-  useEffect(() => {
-    if (!session) return;
-    getCurrentUser(session.accessToken)
-      .then(setProfile)
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 401) {
-          logout();
-          return;
-        }
-        console.error('Failed to load profile.', error);
       });
   }, [session, logout]);
 
