@@ -9,6 +9,7 @@ pnpm start:dev    # nest start --watch
 pnpm build        # nest build
 pnpm start:prod   # node dist/main (run build first)
 pnpm lint         # eslint --fix over src/apps/libs/test
+pnpm typecheck    # tsc --noEmit
 pnpm test         # jest (unit tests, *.spec.ts colocated under src/)
 pnpm test:e2e     # jest --config ./test/jest-e2e.json
 pnpm test:cov     # jest with coverage

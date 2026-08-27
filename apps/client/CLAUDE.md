@@ -11,6 +11,7 @@ pnpm dev          # next dev
 pnpm build        # next build
 pnpm start        # next start (serves the production build)
 pnpm lint         # eslint
+pnpm typecheck    # tsc --noEmit
 pnpm test         # vitest run
 pnpm test:watch   # vitest (watch mode)
 ```
