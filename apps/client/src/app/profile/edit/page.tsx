@@ -9,13 +9,12 @@ import {
 import {
   avatarSrcFor,
   changePassword,
-  getCurrentUser,
   initialsFor,
   updateProfile,
   uploadAvatar,
-  type UserProfile,
 } from '@/lib/api/users';
 import { useRequireSession } from '@/lib/auth/useRequireSession';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { formatFileSize } from '@/lib/format';
 import {
   Avatar,
@@ -42,8 +41,7 @@ import {
 export default function EditProfilePage() {
   const router = useRouter();
   const { session, logout } = useRequireSession();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const { profile, setProfile, loadError } = useProfile(session, logout);
 
   const [isSavingName, setIsSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -60,19 +58,6 @@ export default function EditProfilePage() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSaved, setPasswordSaved] = useState(false);
-
-  useEffect(() => {
-    if (!session) return;
-    getCurrentUser(session.accessToken)
-      .then(setProfile)
-      .catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 401) {
-          logout();
-          return;
-        }
-        setLoadError(error instanceof ApiError ? error.message : 'Failed to load profile.');
-      });
-  }, [session, logout]);
 
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
